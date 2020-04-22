@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 from dhis2 import Api
-api = Api("http://prep.mets.or.ug","mtushabe","Justborn@08")
+api = Api("http://prep.mets.or.ug","admin","district")
 data = pd.read_csv('lugore.csv')
 uids= data['id'].astype(str).tolist()
 for i in uids:
