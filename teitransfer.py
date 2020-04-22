@@ -34,3 +34,13 @@ else:
         transfer = api.put('trackedEntityInstances/'+item,data = dict_entity)
         print (item +" "+ result.json()["message"])
     print("Transfer process done!")
+#CREATE AN ARRAY OF STRING IDS
+#id_list =ids['UIDS'].astype(str).tolist()
+#SELECT THOSE ITEMS THAT MATCH THE IDS IN THE LIST.
+#mask = df['clientID'].isin(id_list)
+#FILTER OUT THOSE ITEMS
+#filtered=df[mask]
+#QUERY uuids and UNIQUE CLIENT NUMBERS
+#r = api.get('trackedEntityInstances/query',params={'fields': 'trackedEntityInstance','ou':'Am5BLrPGyfR','attribute':'wk44sbe36Wm'})
+#data = r.json()  
+#rows = data["rows"]
