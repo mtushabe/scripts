@@ -6,7 +6,9 @@ api = Api("http://localhost:8181","admin","district")
 #Change the path to the file with the tei ids you want to delete.
 data = pd.read_csv('mul.csv')
 uids= data['id'].astype(str).tolist()
+#Specify the facility you transfering from here
 transferFrom = "Facility A"
+#Specify the facility you transfering to here
 transferTo = "Facility B"
 fromOrg = api.get('organisationUnits',params={'field':'id','filter':'name:eq:'+ transferFrom})
 toOrg = api.get('organisationUnits',params={'field':'id','filter':'name:eq:'+ transferTo})
