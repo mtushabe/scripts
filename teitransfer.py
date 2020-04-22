@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 from dhis2 import Api
-#Don't forget to put the right credentials to the system and also look at the TRACKER program you working with.
+#Don't forget to put the right credentials to the tracker and also look at the TRACKER program you working with.
 api = Api("http://localhost:8181","admin","district")
 #Change the path to the file with the tei ids you want to delete.
 data = pd.read_csv('mul.csv')
@@ -20,6 +20,10 @@ else:
     transferFromId = fromOrg.json()['organisationUnits'][0]['id']
     transferToId = toOrg.json()['organisationUnits'][0]['id']
     for item in uids:
+        #Incase you not using KP Tracker, make sure you change the program id in the line below
+        #For DREAMS Program id is: YRwgjjgdDvM
+        #For KP Program id is: F5ZdOBuqlJh
+        #For OVC program id is: mcEgG7J3ooq
         result = api.put('tracker/ownership/transfer',params={'trackedEntityInstance':item,'program':'F5ZdOBuqlJh','ou':transferToId})
         teiResult = api.get('trackedEntityInstances',params={'trackedEntityInstance':item,'fields':'*'})
         entity = teiResult.json()['trackedEntityInstances'][0]
