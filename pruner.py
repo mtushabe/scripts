@@ -1,6 +1,7 @@
 import pandas as pd
 import json
 from dhis2 import Api
+#Don't forget to change the credentials to much the ones that you use t access the system.
 api = Api("http://prep.mets.or.ug","admin","district")
 data = pd.read_csv('deletion.csv')
 clientIds= data['unique'].astype(str).tolist()
