@@ -48,7 +48,8 @@ write.csv(ImportReady.aggregate,paste0(outputfile,".csv"),row.names = FALSE)
 else if (supporttype=='2'){   # DSD only
 #DSD <- data.m.split
 DSD <- data.split.supportType[[1]]
-base1.DSD <- (merge(DSD.lookup, DSD, by = 'Indicator_code'))
+base1.DSD <- (merge(DSD.lookup, DSD, by.x = 'Indicator_code', by.y = 'variable', all.y=TRUE))
+#base1.DSD <- (merge(DSD.lookup, DSD, by = 'Indicator_code'))
 #base1.DSD <- (merge(DSD, DSD.lookup, by = 'Indicator_code'))
 #names(base1.DSD)[names(base1.DSD) == 'RETURN_FIELD_DSD'] <- 'RETURN_FIELD'
 colnames(base1.DSD)<-mgsub(c("RETURN_FIELD_DSD"),c("RETURN_FIELD"),colnames(base1.DSD))
