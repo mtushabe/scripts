@@ -11,3 +11,6 @@ checkValueTypeCompliance(d)
 checkNegativeValues(d)
 Violations_AGYW_PREV <-validateData(data = d, datasets = c("jKdHXpBfWop","em1U5x9hhXh","qzVASYuaIey","mbdbMiLZ4AA","BPEyzcDb8fT"),return_violations_only = TRUE)
 savehistory("2020Q1_HISTORY")
+
+
+DSD.lookup<- read.csv("dsd_lookup",header=TRUE,sep=",",check.names = FALSE,stringsAsFactors=FALSE)
