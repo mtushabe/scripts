@@ -2,8 +2,8 @@ import pandas as pd
 import json
 from dhis2 import Api
 #Don't forget to put the right credentials to the system
-#api = Api("http://localhost:8181","mtushabe","Justborn@08")
-api = Api("https://dreams.mets.or.ug","mtushabe","DREAMS1234!")
+#api = Api("http://localhost:8181","mtushabe","Testing")
+api = Api("https://dreams.mets.or.ug","mtushabe","Testing!")
 #Change the path to the file with the ids
 ##
 #DREAMS- Program ID is YRwgjjgdDvM
