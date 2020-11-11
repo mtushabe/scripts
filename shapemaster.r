@@ -1,6 +1,6 @@
 shaping <-function(file, supporttype, outputfile, ...) {
     
-    setwd("~/Documents/METS/2020 Q2 REPORTING")
+    #setwd("~/Documents/METS/2020 Q2 REPORTING")
     #setwd("/cloud/project/files/coding")
     #data<-read.csv(file, header=TRUE,sep=",",check.names = FALSE,stringsAsFactors=FALSE)
     data<-data.table::fread(file, header=TRUE,sep=",",check.names = FALSE,stringsAsFactors=FALSE,quote="\"")
