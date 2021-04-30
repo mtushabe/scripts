@@ -1,0 +1,38 @@
+import requests
+import pandas as pd
+import json
+from pandas.compat import StringIO
+from dhis2 import Api
+api = Api("https://hfqap-dev.health.go.ug","admin","DHiS2021$$$")
+
+teiUrl="https://hfqap-dev.health.go.ug/api/trackedEntityInstances.json?ou=SUvODYOcaVf;BD3XaQ7cQAp&ouMode=DESCENDANTS&fields=trackedEntityInstance&paging=false"
+headers = {'Authorization': 'Basic bWV0cy5pbXdvdGFzdWJpOkRIaVMyMDIxJCQk'}
+response1 = requests.request("GET", teiUrl, headers=headers)
+res = json.loads(response1.text) 
+data = response1.json().get("trackedEntityInstances")
+for item in data:
+    tei=item.get("trackedEntityInstance")
+    teiResult=api.get('trackedEntityInstances/'+tei,params={'fields':'*'})
+    enrollments = teiResult.json()['enrollments']
+    if not enrollments:
+        print(item.get("trackedEntityInstance") +" "+"does not have any enrollments")
+    else:
+        orgUnitName = teiResult.json()['enrollments'][0]['orgUnitName']
+        orgUnit = teiResult.json()['enrollments'][0]['orgUnit']
+        events = teiResult.json()['enrollments'][0]['events']
+        count = 0
+        for event in events:
+            if event['orgUnit'] != orgUnit:
+                event_json =json.dumps(event)
+                event_json = event_json.replace(event['orgUnit'],orgUnit)
+                event_json = event_json.replace(event['orgUnitName'],orgUnitName)
+                dict_entity = json.loads(event_json)
+                transfer=api.put('events/'+event['event'],data = dict_entity)
+                if transfer.status_code == 200:
+                    count = count+1 
+                    print("Event "+event['event']+ " moved to enrolling subcounty as requested")
+        if count>0:
+            print("For "+item.get("trackedEntityInstance")+ " All events have been moved to enrolling subcounty as requested")
+        else:
+            print("For "+item.get("trackedEntityInstance")+ " All the events already belong to the enrolling subcounty!")
+
