@@ -17,12 +17,16 @@ for item in csv.index:
     uuid =csv["uid"][item]
     agegroup = csv["agegrp"][item]
     teiResponse=api.get('trackedEntityInstances/'+teiid, params={'program':'F5ZdOBuqlJh'})
-    payload = teiResponse.json()
-    current = payload["attributes"][0]
-    preferred["value"] = agegroup
-    preferred["lastUpdated"]=current.get("lastUpdated")
-    preferred["storedBy"]= current.get("storedBy")
-    preferred["created"]=current.get("created")
-    payload["attributes"].append(preferred)
-    update=api.put("trackedEntityInstances/"+teiid,data=payload)
-    print (uuid + " " + update.json()["message"])
+    string= json.dumps(teiResponse.json())
+    if "Age group" in string:
+        print (uuid +" "+ "age group already updated!")
+    else:
+        payload = teiResponse.json()
+        current = payload["attributes"][0]
+        preferred["value"] = agegroup
+        preferred["lastUpdated"]=current.get("lastUpdated")
+        preferred["storedBy"]= current.get("storedBy")
+        preferred["created"]=current.get("created")
+        payload["attributes"].append(preferred)
+        update=api.put("trackedEntityInstances/"+teiid,data=payload)
+        print (uuid + " " + update.json()["message"])
