@@ -1,0 +1,14 @@
+import pandas as pd
+import json
+from dhis2 import Api
+import ast
+
+api = Api("http://5.189.138.250:8080","dkusiima","Mimi2016:)")
+
+csv = pd.read_csv('agegrpoldserver.csv')
+for item in csv.index:
+    teiid=csv["id"][item]
+    agegrp = csv["agegrp"][item]
+    teiResponse=api.get('trackedEntityInstances/'+teiid, params={'program':'F5ZdOBuqlJh'})
+    teiResponse.json()["attributes"][0]
+    print(teiResponse.json()["attributes"][0])
