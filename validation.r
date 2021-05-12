@@ -1,7 +1,11 @@
+#SCRIPT FOR DATIM REPORTING
+
 library(datimvalidation)
 require(datimvalidation)
 secrets<-"secrets.json"
 loadSecrets(secrets)
+#remember to use the shapemaster.r
+shaping("AGYW_PREV.csv",2,"AGYW_PREV-Final")
 datafile<-"AGYW_PREV-Final.csv"
 d<-d2Parser(filename = datafile ,type = "csv")# this throws an error for AGYW_PREV since the attribute option combo used is default(HllvX50cXC0)
 #This covers all datasets including the one that has AGYW_PREV that normally throws the invalid data elements error
