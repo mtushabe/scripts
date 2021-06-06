@@ -12,7 +12,7 @@ for idx, identifier in ids.iterrows():
     event=0
     for index, row in filtered.iterrows():
         temp["event."+str(event)]=row["Event date"]
-        event=event+1    
+        event+=1    
     template.append(temp)
 final=pd.DataFrame(template)
 final.to_csv("df_refill.csv",index=False)   
