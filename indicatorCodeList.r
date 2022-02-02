@@ -1,8 +1,9 @@
 # read csv from url
-FacilityCodeList <-read.csv("https://www.datim.org/api/sqlViews/DotdxKrNZxG/data.csv?var=dataSets:zL8TlPVzEBZ",stringsAsFactors = F,sep=',')
-CommunityCodeList <-read.csv("https://www.datim.org/api/sqlViews/DotdxKrNZxG/data.csv?var=dataSets:TBcmmtoaCBC",stringsAsFactors = F,sep=',')
+FacilityCodeList <-read.csv("https://www.datim.org/api/sqlViews/DotdxKrNZxG/data.csv?var=dataSets:BHlhyPmRTUY",stringsAsFactors = F,sep=',')
+CommunityCodeList <-read.csv("https://www.datim.org/api/sqlViews/DotdxKrNZxG/data.csv?var=dataSets:HfhTPdnRWES",stringsAsFactors = F,sep=',')
 
-AGYW_PREV_CodeList <-read.csv("https://www.datim.org/api/sqlViews/DotdxKrNZxG/data.csv?var=dataSets:qHyrHc4zwx4",stringsAsFactors = F,sep=',')
+
+AGYW_PREV_CodeList <-read.csv("https://www.datim.org/api/sqlViews/DotdxKrNZxG/data.csv?var=dataSets:MGNVwVicMVm",stringsAsFactors = F,sep=',')
 
 # Add conditional column for reporting frequency
 FacilityCodeList$ReportingFreq <- ifelse(grepl("HTS|TX_NEW|TX_CURR|TX_RTT|TX_ML|TX_PVLS|TX_ML|VMMC_CIRC|PMTCT|TB_ART|TB_STAT", FacilityCodeList$dataelement) , "Quarterly", 
@@ -157,10 +158,10 @@ code_DSD_TA_Facility_and_Community <-rbind(code_DSD_TA_Facility,code_DSD_TA_Comm
 code_CS_Facility_and_Community <-rbind(code_CS_Facility,code_CS_Community)
 
 #
-write.csv(code_DSD_TA_Facility_and_Community,file=paste0("/home/fred/Downloads/DATIM4U/FY2021/Q1/Metadata/Coding/DATIM4U_IndicatorCodeList_Facility_and_Community_FY2021Q1_DSDTA_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
+write.csv(code_DSD_TA_Facility_and_Community,file=paste0("/Users/macbookpro/Documents/METS/DATIM4U/FY2022/Q1/Metadata/Coding/DATIM4U_IndicatorCodeList_Facility_and_Community_FY2021Q1_DSDTA_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
 
-write.csv(code_NoApp_Facility,file=paste0("/home/fred/Downloads/DATIM4U/FY2021/Q1/Metadata/Coding/DATIM4U_IndicatorCodeList_NoApp_FY2021_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
+write.csv(code_NoApp_Facility,file=paste0("/Users/macbookpro/Documents/METS/DATIM4U/FY2022/Q1/Metadata/Coding/DATIM4U_IndicatorCodeList_NoApp_FY2021_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
 
-write.csv(code_CS_Facility_and_Community,file=paste0("/home/fred/Downloads/DATIM4U/FY2021/Q2/Metadata/Coding/DATIM4U_IndicatorCodeList_CS_FY2021Q1_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
+write.csv(code_CS_Facility_and_Community,file=paste0("/Users/macbookpro/Documents/METS/DATIM4U/FY2022/Q1/Metadata/Coding/DATIM4U_IndicatorCodeList_CS_FY2021Q1_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
 
-write.csv(AGYW_PREV_CodeList,file=paste0("/home/fred/Downloads/DATIM4U/FY2021/Q1/Metadata/Coding/DATIM4U_IndicatorCodeList_AGYW_PREV_FY2021_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
+write.csv(AGYW_PREV_CodeList,file=paste0("/Users/macbookpro/Documents/METS/DATIM4U/FY2022/Q1/Metadata/Coding/DATIM4U_IndicatorCodeList_AGYW_PREV_FY2021_", format(Sys.time(), format = "%F_%R_%Z", tz = "Africa/Kampala"), ".csv"), row.names = FALSE)
