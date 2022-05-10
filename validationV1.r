@@ -82,9 +82,10 @@ require(datimvalidation)
 datimutils::loginToDATIM(config_path = "secrets.json")
 DSD.lookup<- read.csv("dsd_lookup.csv",header=TRUE,sep=",",check.names = FALSE,stringsAsFactors=FALSE)
 shaping("PMTCT_ART_HEI_POS_EID.csv",2,"PMTCT_ART_HEI_POS_EID-Final")
+
+
 datafile<-"PMTCT_ART_HEI_POS_EID-Final.csv"
 d<-d2Parser(filename = datafile ,type = "csv")
-
 checkDataElementOrgunitValidity(data = d,datasets = c("HfhTPdnRWES","HrozVxNYFJy","BHlhyPmRTUY","GEBcXhZw0fD","MGNVwVicMVm"))
 checkDataElementDisaggValidity(data=d,datasets = c("HfhTPdnRWES","HrozVxNYFJy","BHlhyPmRTUY","GEBcXhZw0fD","MGNVwVicMVm"))
 checkValueTypeCompliance(d)
