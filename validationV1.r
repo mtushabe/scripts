@@ -75,7 +75,8 @@ mgsub <-function(pattern, replacement, x, ...) {
 
 ##Scripts
 install.packages('devtools')
-devtools::install_github(repo = "https://github.com/pepfar-datim/datimutils.git", ref = "master")
+#devtools::install_github(repo = "https://github.com/pepfar-datim/datimutils.git", ref = "master")
+devtools::install_github('https://github.com/jason-p-pickering/datim-validation',build_vignettes = TRUE)
 library(datimvalidation)
 require(datimvalidation)
 
