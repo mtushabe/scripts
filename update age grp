@@ -3,7 +3,7 @@ import json
 from dhis2 import Api
 import ast
 
-api = Api("http://5.189.138.250:8080","dkusiima","Mimi2016:)")
+api = Api("http://5.189.138.250:8080","dkusiima","password")
 
 csv = pd.read_csv('agegrpoldserver.csv')
 for item in csv.index:
