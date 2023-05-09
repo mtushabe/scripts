@@ -1,0 +1,17 @@
+import csv
+import urllib.request
+import requests
+import json
+import io
+
+
+url = 'https://prep.mets.or.ug/api/users.csv?fields=id,userCredentials[lastLogin,disabled]&filter=userCredentials.lastLogin:lt:2023-01-01&paging=false'
+headers = {'Authorization': 'Basic bXR1c2hhYmU6TW9zZXMxMjM0IQ=='}
+response = requests.request("GET", url, headers=headers)
+csv=pd.read_csv(io.StringIO(response.text))
+#csv = pd.read_csv('disabled.csv')
+
+for item in csv.index:
+    uid=csv["id"][item]
+    r = api.patch('users/'+uid, data={"userCredentials":{"disabled":'true'}})
+    print(uid +" response is "+ str(r.status_code))
