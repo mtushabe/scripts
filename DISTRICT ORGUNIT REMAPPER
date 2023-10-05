@@ -1,0 +1,61 @@
+from dhis2 import Api
+import pandas as pd
+import json
+import requests 
+
+api = Api.from_auth_file('kptest.json', api_version=29, user_agent='myApp/1.0')
+headers = {'Authorization': 'Basic bXR1c2hhYmU6TW9zZXMxMjM0IQ=='}
+baseUrl = "http://5.189.138.72:8787/api/users/"
+#baseUrl = "https://prep.mets.or.ug/api/users/"
+
+
+listed = pd.read_csv("kp_users260723.csv")
+distList = pd.read_csv('districtmapper.csv', index_col=0, squeeze = True)
+distMapper = distList.to_dict()
+
+for i in listed.index:
+    userId=listed['id'][i]
+    result=api.get('users',params={'filter':'id:eq:'+userId,'fields':'id,organisationUnits[id,level],dataViewOrganisationUnits[id,level],teiSearchOrganisationUnits[id,level]','paging':'false'})
+    userResult=result.json()['users']
+    if(userResult):
+        organisationUnits=userResult[0]['organisationUnits']
+        dataViewOrgUnits=userResult[0]['dataViewOrganisationUnits']
+        teiSearchOrgUnits=userResult[0]['teiSearchOrganisationUnits']
+        if (organisationUnits):
+            for item in organisationUnits:
+                if (item.get('level')==3):
+                    oldId = item.get('id')
+                    newId = distMapper.get(oldId)
+                    if(newId!=None):
+                        detachResponse=requests.request("DELETE",baseUrl+userId+"/organisationUnits/"+oldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/organisationUnits/"+newId+"", headers=headers)
+        else:
+            print("No organisation units attached to this user!")
+        if (dataViewOrgUnits):
+            for item in dataViewOrgUnits:
+                if (item.get('level')==3):
+                    dvOldId = item.get('id')
+                    dvNewId = distMapper.get(dvOldId)
+                    if(dvNewId!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/dataViewOrganisationUnits/"+dvOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/dataViewOrganisationUnits/"+dvNewId+"", headers=headers)
+       
+        else:
+            print("No data view organisation units attached to this user!")
+        
+        if (teiSearchOrgUnits):
+            for item in teiSearchOrgUnits:
+                if (item.get('level')==3):
+                    tsOldId = item.get('id')
+                    tsNewId = distMapper.get(tsOldId)
+                    if(tsNewId!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsNewId+"", headers=headers)
+        else:
+            print("No data view organisation units attached to this user!")
+        
+    else:
+        print("User list is empty!")
+        
+    print ("Operations on user "+userId+ " are complete!")
+    print("==========================================================")
