@@ -1,0 +1,98 @@
+##Legit Script
+
+from dhis2 import Api
+import pandas as pd
+import json
+import requests 
+
+api = Api.from_auth_file('kptest.json', api_version=29, user_agent='myApp/1.0')
+headers = {'Authorization': 'Basic bXR1c2hhYmU6TW9zZXMxMjM0IQ=='}
+baseUrl = "https://prep.mets.or.ug/api/users/"
+
+
+listed = pd.read_csv("kp_users041023.csv")
+#listed = pd.read_csv("kpusertest.csv")
+sbList1 = pd.read_csv('mapper1.csv', index_col=0, squeeze = True)
+sbList2 = pd.read_csv('mapper2.csv', index_col=0, squeeze = True)
+sbList3 = pd.read_csv('mapper3.csv', index_col=0, squeeze = True)
+sbMapper1 = sbList1.to_dict()
+sbMapper2 = sbList2.to_dict()
+sbMapper3 = sbList3.to_dict()
+
+for i in listed.index:
+    userId=listed['id'][i]
+    result=api.get('users',params={'filter':'id:eq:'+userId,'fields':'id,organisationUnits[id,level],dataViewOrganisationUnits[id,level],teiSearchOrganisationUnits[id,level]','paging':'false'})
+    userResult=result.json()['users']
+    if(userResult):
+        organisationUnits=userResult[0]['organisationUnits']
+        dataViewOrgUnits=userResult[0]['dataViewOrganisationUnits']
+        teiSearchOrgUnits=userResult[0]['teiSearchOrganisationUnits']
+        if (organisationUnits):
+    
+            for item in organisationUnits:
+                if (item.get('level')==4):
+                    oldId = item.get('id')
+                    newId1 = sbMapper1.get(oldId)
+                    if(newId1!=None):
+                        detachResponse=requests.request("DELETE",baseUrl+userId+"/organisationUnits/"+oldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/organisationUnits/"+newId1+"", headers=headers)
+                    newId2 = sbMapper2.get(oldId)
+                    if(newId2!=None):
+                        detachResponse=requests.request("DELETE",baseUrl+userId+"/organisationUnits/"+oldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/organisationUnits/"+newId2+"", headers=headers)
+                    newId3 = sbMapper3.get(oldId)
+                    if(newId3!=None):
+                        detachResponse=requests.request("DELETE",baseUrl+userId+"/organisationUnits/"+oldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/organisationUnits/"+newId3+"", headers=headers)
+
+        else:
+            print("No organisation units attached to this user!")
+        if (dataViewOrgUnits):
+            for item in dataViewOrgUnits:
+                if (item.get('level')==4):
+                    dvOldId = item.get('id')
+                    dvNewId1 = sbMapper1.get(dvOldId)
+                    if(dvNewId1!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/dataViewOrganisationUnits/"+dvOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/dataViewOrganisationUnits/"+dvNewId1+"", headers=headers)
+                  
+                    dvNewId2 = sbMapper2.get(dvOldId)
+                    if(dvNewId2!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/dataViewOrganisationUnits/"+dvOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/dataViewOrganisationUnits/"+dvNewId2+"", headers=headers)
+                   
+                    dvNewId3 = sbMapper3.get(dvOldId)
+                    if(dvNewId3!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/dataViewOrganisationUnits/"+dvOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/dataViewOrganisationUnits/"+dvNewId3+"", headers=headers)
+                  
+        else:
+            print("No data view organisation units attached to this user!")
+        
+        if (teiSearchOrgUnits):
+            for item in teiSearchOrgUnits:
+                if (item.get('level')==4):
+                    tsOldId = item.get('id')
+                    tsNewId1 = sbMapper1.get(tsOldId)
+                    if(tsNewId1!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsNewId1+"", headers=headers)
+                        #attachResponse3=requests.request("POST",baseUrl+userId+"/organisationUnits/"+dvNewId1+"", headers=headers)
+                    tsNewId2 = sbMapper2.get(tsOldId)
+                    if(tsNewId2!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsNewId2+"", headers=headers)
+                        #attachResponse3=requests.request("POST",baseUrl+userId+"/organisationUnits/"+dvNewId2+"", headers=headers)
+                    tsNewId3 = sbMapper3.get(tsOldId)
+                    if(tsNewId3!=None):
+                        detachResponse1=requests.request("DELETE",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsOldId+"", headers=headers)
+                        attachResponse=requests.request("POST",baseUrl+userId+"/teiSearchOrganisationUnits/"+tsNewId3+"", headers=headers)
+                    #attachResponse3=requests.request("POST",baseUrl+userId+"/organisationUnits/"+dvNewId3+"", headers=headers)
+
+        else:
+            print("No tei organisation units attached to this user!")
+        
+    else: 
+        print("Users list empty")
+    print ("Operations on user "+userId+ " are complete!")
+    print("==========================================================")
