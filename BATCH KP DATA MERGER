@@ -1,0 +1,222 @@
+#===================FINAL CODE FOR DATA MERGE================SCRIPT CODE===================
+
+import requests
+import pandas as pd
+import json
+from dhis2 import Api
+from collections import defaultdict
+
+api = Api.from_auth_file('kpcreds1.json', api_version=29, user_agent='myApp/1.0')
+
+
+mapping = pd.read_csv('mapping.csv')
+csv_data = pd.read_csv('centers.csv')
+dropdown_issue=False
+#check if the encounter data element has dropincenter name thats is not valid and should be converted
+encouter_hotspot=False
+
+# Extract IDs from CSV data
+ids_list = csv_data['code'].tolist()
+
+baseEventId= ""
+
+def data_element_exists(data_values, element_list):
+    for item in data_values:
+        if len(element_list)==1:
+            if item['dataElement'] == element_list[0]:
+                return True
+        else:
+            if item['dataElement'] == element_list[0] or item['dataElement'] == element_list[1]:
+                return True
+            
+    return False
+
+def both_encounter_events(baseEvent, otherEvent):
+    if baseEvent['programStage']=='ob9D0GVS2PE' and otherEvent['programStage']=='ob9D0GVS2PE':
+        return True
+    return False
+def baseevent_baseline(baseEvent, otherEvent):
+    if baseEvent['programStage'] == "vkxkqK8bTy8":
+        return True
+    return False
+def map_events(eventResult,dropdown_issue):
+
+    event=eventResult.json()
+
+    #add the baseline visit variable
+    if(event["programStage"]=="vkxkqK8bTy8"):
+        event['dataValues'].append({ "dataElement": "wOroVf2qBpK", "value": "true" })
+
+    #update the stage
+    event["programStage"]="ob9D0GVS2PE"
+    
+
+    element_list=['zBECl1PiSKU']
+    if data_element_exists(event['dataValues'],element_list):
+
+        for item in event['dataValues']:
+            
+            if item['dataElement'] == 'zBECl1PiSKU' and item['value'] not in ids_list:
+                dropdown_issue = True
+                index_to_update = mapping.index[mapping['baseline_id'] == "zBECl1PiSKU"].tolist()[0]
+                mapping.at[index_to_update, 'followup_id'] = "QfwKdN3WAi9"
+
+    eventId = event["event"]
+
+    eventdata =json.dumps(event)
+    for i in mapping.index:
+        baselineId=mapping['baseline_id'][i]
+        followupId=mapping['followup_id'][i]
+        eventdata=eventdata.replace(baselineId,followupId)
+        if dropdown_issue:
+            eventdata=eventdata.replace("Drop in Center","Hot Spot")
+    payload = json.loads(eventdata)
+    try:
+        update=api.put('events/'+eventId,data = payload)
+        response = update.json()
+        if(response["httpStatusCode"]==200):
+
+            print("=================================================")
+            print(str(response["httpStatusCode"])+", "+eventId+" - "+response["message"])
+            print("=================================================")
+        else:
+            print("=================================================")
+            print(str(response["httpStatusCode"])+","+eventId+ " update was not successful")
+            print("=================================================")
+    except requests.exceptions.HTTPError as errh:
+        print ("Http Error:",errh)
+    except requests.exceptions.RequestException as err:
+        print (err)
+
+result = api.get('trackedEntityInstances',params={"fields":"trackedEntityInstance","ou":"wepUthscBkh","program":"F5ZdOBuqlJh","totalPages":"true"})
+totalPages= result.json()["pager"]["pageCount"]
+pageSize=1
+
+for page in range(1, totalPages+1):
+#for page in range(6, 7):
+    print()
+    print("################## Merging page " +str(page)+ " entities starting ################!")
+    print()
+    pageResult = api.get('trackedEntityInstances',params={"fields":"trackedEntityInstance","ou":"wepUthscBkh","program":"F5ZdOBuqlJh",'page':page})      
+    trackedEntities= pageResult.json()["trackedEntityInstances"]
+    for entity in trackedEntities:
+        teiId = entity["trackedEntityInstance"]
+        try:
+            eventResult = api.get('events',params={"trackedEntityInstance":teiId ,"fields":"event,programStage,created,eventDate","order":"created:asc"}) 
+
+            events = eventResult.json()['events']
+
+            # Initialize defaultdict to store events by event date
+            events_by_date = defaultdict(list)
+
+            # Loop through events
+            for event in events:
+                event_date = event.get("eventDate")
+                event_id = event.get("event")
+                if event_date and event.get("programStage") in ["vkxkqK8bTy8", "Ba5vxfdHg5A","lphLCeFzrig","ob9D0GVS2PE"]:
+                    events_by_date[event_date].append(event_id)
+                if event.get("programStage")=='vkxkqK8bTy8':
+                    baseEventId=event.get("event")
+
+        # Filter events with the same event date
+        #same_date_events = {date: ids for date, ids in events_by_date.items() if len(ids) > 1}
+            same_date_events = [list(ids) for date, ids in events_by_date.items() if len(ids) > 1]
+
+        # Print events with the same event date
+            if same_date_events:
+                date_events =same_date_events [0]
+                baseResult = api.get('events/'+date_events[0])
+                eventResult=api.get('events/'+date_events[1])
+                baselineEvent=baseResult.json()
+                otherEvent=eventResult.json()
+                if both_encounter_events(baselineEvent,otherEvent):
+                    print("Found same date events for "+teiId+ " both are for the encounter stage!")
+                else:
+                    if not baseevent_baseline(baselineEvent,otherEvent):
+                        initialResult=api.get('events/'+baseEventId)
+                        map_events(initialResult,dropdown_issue)
+                    baselineEvent["dataValues"].extend(otherEvent["dataValues"])
+
+                    #add the baseline visit variable
+                    #if prep visit, update the visit type and date
+                    if (otherEvent["programStage"]=="Ba5vxfdHg5A"):
+                        baselineEvent['dataValues'].append({ "dataElement": "XSupZXwkpf7", "value": date })
+                        baselineEvent['dataValues'].append({"dataElement": "TwIlGVZwE2H", "value": "PREP"})
+                    if (otherEvent["programStage"]=="lphLCeFzrig"):
+                        baselineEvent['dataValues'].append({"dataElement": "TwIlGVZwE2H", "value": "ART"})
+                        baselineEvent['dataValues'].append({"dataElement": "Nig5jt5bogH", "value": date})
+                    #if baseline visit tick the baseline visit tick
+                    if(baselineEvent["programStage"]=="vkxkqK8bTy8"):
+                        baselineEvent['dataValues'].append({ "dataElement": "wOroVf2qBpK", "value": "true"})
+                    #update base the stage
+                    baselineEvent["programStage"]="ob9D0GVS2PE"
+
+            
+                    #list of data elements to drop in center both at baseline and follow up.
+                    element_list=["zBECl1PiSKU","EGCupwmIgF4"]
+                    if data_element_exists(baselineEvent['dataValues'], element_list):
+
+                        for item in baselineEvent['dataValues']:
+
+                            if item['value'] not in ids_list:
+                                if item['dataElement'] == 'zBECl1PiSKU':
+                                    dropdown_issue = True
+                                    index_to_update = mapping.index[mapping['baseline_id'] == "zBECl1PiSKU"].tolist()[0]
+                                    mapping.at[index_to_update, 'followup_id'] = "QfwKdN3WAi9"
+                                if item['dataElement'] == 'EGCupwmIgF4':
+                                    encouter_hotspot=True
+
+
+                    eventId = otherEvent["event"]
+                    baseId = baselineEvent["event"]
+
+                    eventdata =json.dumps(baselineEvent)
+                    for i in mapping.index:
+                        baselineId=mapping['baseline_id'][i]
+                        followupId=mapping['followup_id'][i]
+                        eventdata=eventdata.replace(baselineId,followupId)
+                        eventdata=eventdata.replace(" Sexual","Sexual")
+                        if dropdown_issue:
+                            eventdata=eventdata.replace("Drop in Center","Hot Spot")
+                        if encouter_hotspot:
+                            eventdata=eventdata.replace("EGCupwmIgF4","QfwKdN3WAi9")
+                    payload = json.loads(eventdata)
+
+                    try:
+                        update=api.put('events/'+baseId,data = payload)
+                        response = update.json()
+                        if(response["httpStatusCode"]==200):
+                            delete=api.delete('events/'+eventId)
+
+                            print(str(response["httpStatusCode"])+", "+baseId+" - "+response["message"])
+                            print("==================================================")
+                            print("Events "+baseId+ " and "+ eventId+ " for entity "+teiId+" have been successfully merged!")
+                            print("=======================================================================================")
+                        else:
+
+                            print(str(response["httpStatusCode"])+","+teiId+ " update was not successful")
+                            print("=================================================")
+                    except requests.exceptions.HTTPError as errh:
+                        print ("Http Error:",errh)
+                    except requests.exceptions.RequestException as err:
+                        print (err)
+
+        #No events with the same event date            
+            else:
+                
+                filtered_events = [event for event in events if event["programStage"] in ["vkxkqK8bTy8", "Ba5vxfdHg5A","lphLCeFzrig"]]
+                # Print filtered events
+                if filtered_events:
+                    #print("Filtered Events:")
+                    for entity in filtered_events:
+                        eventResult = api.get('events/'+entity.get('event'))
+                        map_events(eventResult,dropdown_issue)
+                    print("Events for "+teiId+" have been successfully migrated to the encounter stage!")
+                    print("============================================================================")
+                else:
+                    print("Tracked entity "+teiId +" does not have events to merge")
+
+        except requests.exceptions.HTTPError as errh:
+            print ("Http Error:",errh)
+        except requests.exceptions.RequestException as err:
+            print (err)
