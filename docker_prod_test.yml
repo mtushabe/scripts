@@ -1,0 +1,203 @@
+services:
+  # --------------------------
+  # Postgres (DHIS2 source)
+  # --------------------------
+  postgres:
+    image: debezium/postgres:15
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db_stream
+
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+      -c wal_keep_size=512MB
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      retries: 10
+      start_period: 10s
+
+  # --------------------------
+  # Zookeeper + Kafka
+  # --------------------------
+  zookeeper:
+    image: quay.io/debezium/zookeeper:3.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      retries: 10
+      start_period: 10s
+
+  kafka:
+    image: quay.io/debezium/kafka:3.1
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "29092:29092"
+    environment:
+      ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "kafka-topics.sh --bootstrap-server kafka:9092 --list"]
+      interval: 15s
+      retries: 10
+      start_period: 15s
+
+  # --------------------------
+  # Doris FE + BE
+  # --------------------------
+  doris-fe:
+    image: apache/doris:fe-2.1.8.1
+    container_name: doris-fe
+    hostname: doris-fe
+    ports:
+      - "8030:8030"
+      - "9030:9030"
+
+    volumes:
+      - doris_fe_meta:/opt/apache-doris/fe/doris-meta
+    environment:
+      FE_ID: 1
+      FE_NAME: fe1
+      FE_SERVERS: "fe1:doris-fe:9010"
+
+    healthcheck:
+      test:
+        ["CMD-SHELL", "mysql -h doris-fe -P 9030 -uroot -e 'SHOW FRONTENDS;'"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  doris-be:
+    image: apache/doris:be-2.1.8.1
+    container_name: doris-be
+    hostname: doris-be
+    depends_on:
+      doris-fe:
+        condition: service_healthy
+    ports:
+      - "8040:8040"
+      - "9050:9050"
+    volumes:
+      - doris_be_storage:/opt/apache-doris/be/storage
+    environment:
+      FE_SERVERS: "fe1:doris-fe:9010"
+      BE_IP: "doris-be"
+      BE_PORT: "9050"
+      BE_ADDR: "doris-be:9050"
+    command: >
+      bash -c "
+      echo 'Waiting for FE...';
+      until nc -z doris-fe 9030; do sleep 3; done;
+      echo 'Starting BE...';
+      /opt/apache-doris/be/bin/start_be.sh --daemon;
+      tail -f /opt/apache-doris/be/log/be.log
+      "
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mysql -h doris-fe -P 9030 -uroot -e 'SHOW BACKENDS;' | grep doris-be",
+        ]
+      interval: 10s
+      retries: 10
+      start_period: 20s
+
+  # --------------------------
+  # Debezium Connect
+  # --------------------------
+  connect:
+    image: quay.io/debezium/connect:3.1
+    container_name: connect
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    volumes:
+      - ./scripts:/scripts
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      OFFSET_FLUSH_INTERVAL_MS: 60000
+      OFFSET_FLUSH_TIMEOUT_MS: 5000
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+    command: >
+      bash -c "sleep 10 && /scripts/register_debezium_connector.sh && connect-distributed.sh"
+
+  # --------------------------
+  # Flink JobManager + TaskManager
+  # --------------------------
+  flink-jobmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    container_name: flink-jobmanager
+    depends_on:
+      kafka:
+        condition: service_healthy
+      doris-fe:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      JOB_MANAGER_RPC_ADDRESS: flink-jobmanager
+    volumes:
+      - ./flink/lib:/flink/lib
+      - ./scripts:/scripts
+      - ./flink/checkpoints:/flink/checkpoints
+    restart: unless-stopped
+
+  flink-taskmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    container_name: flink-taskmanager
+    depends_on:
+      flink-jobmanager:
+        condition: service_healthy
+    environment:
+      JOB_MANAGER_RPC_ADDRESS: flink-jobmanager
+      TASK_MANAGER_NUMBER_OF_TASK_SLOTS: 4
+    volumes:
+      - ./flink/lib:/flink/lib
+      - ./flink/checkpoints:/flink/checkpoints
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  doris_fe_meta:
+  doris_be_storage:
